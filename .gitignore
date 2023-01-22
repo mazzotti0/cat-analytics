@@ -46,3 +46,7 @@ dist/**
 *.xlf
 package.nls.*.json
 l10n/
+
+
+# log files
+*.log
