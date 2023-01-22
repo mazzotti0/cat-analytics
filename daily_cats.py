@@ -126,7 +126,38 @@ def mainRunner(url, jobtime):
     return cat_df
 
 
-def main(): 
+if __name__ == '__main__':
+    
+    #################################
+    ### RUN SCRIPT + LOG
+    #################################
+
+
+    # configure logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler('daily_cats.log')
+    fh.setLevel(logging.DEBUG)
+
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    # add the handlers to logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    # run the script and record how much time it took
+    start_time = time.perf_counter()
+    
+      
     url = 'https://catcafebk.com/our-cats/?'
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
@@ -144,37 +175,8 @@ def main():
     else:
         cat_df.to_csv('cat_history.csv', index=False)
 
+    end_time = time.perf_counter()
+    total_time = end_time - start_time
+    logger.info('successful daily_cats.py run!')
+    logger.info(f'Script completed in {total_time:0.6f} seconds')
 
-#################################
-### RUN SCRIPT + LOG
-#################################
-
-
-# configure logging
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
-# create file handler which logs even debug messages
-fh = logging.FileHandler('daily_cats.log')
-fh.setLevel(logging.DEBUG)
-
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-
-# add the handlers to logger
-logger.addHandler(fh)
-logger.addHandler(ch)
-
-# run the script and record how much time it took
-start_time = time.perf_counter()
-main()
-end_time = time.perf_counter()
-total_time = end_time - start_time
-logger.info('successful daily_cats.py run!')
-logger.info(f'Script completed in {total_time:0.6f} seconds')
