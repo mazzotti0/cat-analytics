@@ -50,3 +50,6 @@ l10n/
 
 # log files
 *.log
+
+# secrets 
+*.cfg
