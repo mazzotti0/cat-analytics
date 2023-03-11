@@ -139,10 +139,14 @@ if __name__ == '__main__':
             sender = parser.get('my_email','my_username')
             password = parser.get('my_email','my_password')
             
+            # get recipient list for email
+            recipients_df = pd.read_csv('data/recipient_list.csv')
+            recipient_list = recipients_df['email'].to_list()
+            
             # loop through added cats and send emails
             for cat_id in current_changes_df[mask]['cat_id'].unique():
                 cat_email_df = new_fosters_df[new_fosters_df['cat_id'] == cat_id]
-                send_new_foster_email(cat_email_df, sender, password)
+                send_new_foster_email(cat_email_df, sender, recipient_list, password)
                 logging.info(f"sent email for new cat: {cat_id}")
     else:
         logging.info('no changes since previous pipeline run')

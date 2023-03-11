@@ -53,3 +53,4 @@ l10n/
 
 # secrets 
 *.cfg
+src/data/recipient_list.csv

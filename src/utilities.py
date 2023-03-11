@@ -24,10 +24,19 @@ def getCatPage(url):
         print(page.content)
         return
     
-def send_new_foster_email(df, sender, password): 
+def send_new_foster_email(df, sender, recipient_list, password): 
+    '''
+    send an email alert about a new cat
+    
+    inputs: 
+        - df: 1-row dataframe with the needed info (summary, html)
+        - sender: (str) from address of email 
+        - recipient_list: list of emails to send to
+        - password: (str) gmail app password
+    '''
+    
     sender_email = sender
     sender_password = password
-    recipient_email = sender
     
     #pull text data out of cat df 
     header = df['cat_summary'].values[0]
@@ -45,9 +54,9 @@ def send_new_foster_email(df, sender, password):
     html_message = MIMEText(body, 'html')
     html_message['Subject'] = subject
     html_message['From'] = sender_email
-    html_message['To'] = recipient_email
+    html_message['To'] = ", ".join(recipient_list)
 
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(sender_email, sender_password)
-    server.sendmail(sender_email, recipient_email, html_message.as_string())
+    server.sendmail(sender_email, recipient_list, html_message.as_string())
     server.quit()
