@@ -138,7 +138,7 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     # create file handler which logs even debug messages
-    fh = logging.FileHandler('daily_cats.log')
+    fh = logging.FileHandler('/Users/lucasmazzotti/Documents/GitHub/cat-analytics/logs/cafe_cats.log')
     fh.setLevel(logging.DEBUG)
 
     # create console handler with a higher log level
