@@ -4,8 +4,9 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 from configparser import ConfigParser
+import pandas as pd
 
-def getCatPage(url):
+def get_cat_page(url):
 
     parser = ConfigParser()
     _ = parser.read('../credentials.cfg')
@@ -60,3 +61,33 @@ def send_new_foster_email(df, sender, recipient_list, password):
     server.login(sender_email, sender_password)
     server.sendmail(sender_email, recipient_list, html_message.as_string())
     server.quit()
+
+def compare_snapshots(old_df, new_df):
+    
+    # merge dfs and compare
+    compare_df = pd.merge(old_df, new_df, how='outer', on='cat_id', suffixes=['_old','_new'])
+    loop_cols = [t for t in old_df.columns if 'cat_id' not in t and 'import_at' not in t and 'full_html' not in t]
+
+    for col in loop_cols:
+        col_compare_df = compare_df[[c for c in compare_df.columns if col in c]]
+        compare_df[f'was_{col}_modified'] = (col_compare_df[f'{col}_old'] != col_compare_df[f'{col}_new'])
+
+    # discard rows where nothing was changed
+    compare_df['was_modified'] = compare_df[[col for col in compare_df.columns \
+                                            if 'was_' in col]].any(axis=1)
+    compare_df = compare_df[compare_df['was_modified'] == True]
+
+    # distinguish adds, deletions, modifications
+    def determine_change(old_val, new_val):
+        if pd.isnull(old_val):
+            return 'row_added'
+        elif pd.isnull(new_val):
+            return 'row_deleted'
+        else:
+            return 'row_modified'
+    
+    compare_df['change_type'] = compare_df.apply(lambda x: determine_change(x['cat_name_old'], x['cat_name_new']), 
+                                                axis=1)
+    
+    compare_df_trim = compare_df[[col for col in compare_df.columns if 'html' not in col]]
+    return compare_df_trim

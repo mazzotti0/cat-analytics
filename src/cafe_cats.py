@@ -7,30 +7,16 @@ import time
 import pytz
 import os
 import logging
+from utilities import get_cat_page, compare_snapshots
 
 #################################
 ### DEFINE FUNCTIONS
 #################################
 
-
-def getCatPage(url):
-
-    headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'}
     
-    page = requests.get(url, headers=headers)
+def get_cat_summary(url):
     
-    if page.status_code == 200: 
-        soup = BeautifulSoup(page.content, 'html.parser')
-        # print("got site data")
-        return soup
-    else: 
-        print("Error: ", page.status_code)
-        print(page.content)
-        return
-    
-def getCatSummary(url):
-    
-    soup = getCatPage(url)
+    soup = get_cat_page(url)
     cat_soup = soup.find('div', class_='flex flex-wrap -m-4')
     cats = cat_soup.find_all('a', href=True)
 
@@ -47,15 +33,15 @@ def getCatSummary(url):
             cat_gender = cat_summary[1].split('|')[1]
             
             results.append(
-                {'id':cat_id,
+                {'cat_id':cat_id,
                 'url':cat_url,
-                'name':cat_name,
+                'cat_name':cat_name,
                 'age':cat_age,
                 'gender':cat_gender}
             )
     return results
 
-def addCatFilters(results):
+def add_cat_filters(results):
 
     filters = [
         {'filter': 'cafe_cat','url': 'https://catcafebk.com/our-cats/?cat-filters%5Bcafe%5D=1'},
@@ -69,18 +55,18 @@ def addCatFilters(results):
     # get list of cats associated with each filter
     for filtered in filters:
         print(f"Getting {filtered['filter']} cats... ")
-        filtered_list = getCatSummary(filtered['url'])
+        filtered_list = get_cat_summary(filtered['url'])
 
         # compare filtered list with main list
         for cat in results:
-            if cat['id'] in [filtered_cat['id'] for filtered_cat in filtered_list]: 
+            if cat['cat_id'] in [filtered_cat['cat_id'] for filtered_cat in filtered_list]: 
                 cat[filtered['filter']] = True
             else: 
                 cat[filtered['filter']] = False
     
     return results
 
-def addCatPageInfo(cats): 
+def add_cat_page_info(cats): 
     
     print(f'...checking page for {len(cats)} cats...')
     i = 1
@@ -91,7 +77,7 @@ def addCatPageInfo(cats):
             print(f'...checked {i} of {len(cats)} cat pages...')
         
         # parse page info
-        page = getCatPage(cat['url'])
+        page = get_cat_page(cat['url'])
         page_content = page.find('div', class_ = 'px-6 py-12 md:px-12')
         page_strings = [item for item in page_content.stripped_strings]
 
@@ -104,20 +90,20 @@ def addCatPageInfo(cats):
     
     return cats
 
-def mainRunner(url, jobtime):
+def get_latest_snapshot(url, jobtime):
 
     run_ts = jobtime
     
     print('Getting summary...')
-    cats = getCatSummary(url)
+    cats = get_cat_summary(url)
     print('...done')
     
     print('Getting cat filter data...')
-    cats = addCatFilters(cats)
+    cats = add_cat_filters(cats)
     print('...done')
     
     print('Getting individual cat info (descriptions, type)...')
-    cats = addCatPageInfo(cats)
+    cats = add_cat_page_info(cats)
     print('...done')
     
     cat_df = pd.DataFrame(data=cats)
@@ -161,7 +147,7 @@ if __name__ == '__main__':
     url = 'https://catcafebk.com/our-cats/?'
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
-    cat_df = mainRunner(url, jobtime)
+    cat_df = get_latest_snapshot(url, jobtime)
     print('...retrieved latest cat data')
     
     #check if file exists and append

@@ -4,7 +4,7 @@ from datetime import datetime
 import time
 import pytz
 import os
-from utilities import getCatPage, send_new_foster_email
+from utilities import get_cat_page, send_new_foster_email, compare_snapshots
 from configparser import ConfigParser
 import logging
 
@@ -12,7 +12,7 @@ import logging
 
 def getFosterInfo():
     
-    soup = getCatPage('https://bbawcfosterteam.wixsite.com/cats/availablecats')
+    soup = get_cat_page('https://bbawcfosterteam.wixsite.com/cats/availablecats')
     cats = soup.find('fluid-columns-repeater').find_all('div', class_ = 'comp-kjevao4x5 YzqVVZ')
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
@@ -53,35 +53,6 @@ def getFosterInfo():
     
     return df
 
-def compareSnapshots(old_df, new_df):
-    
-    # merge dfs and compare
-    compare_df = pd.merge(old_df, new_df, how='outer', on='cat_id', suffixes=['_old','_new'])
-    loop_cols = [t for t in old_df.columns if 'cat_id' not in t and 'import_at' not in t and 'full_html' not in t]
-
-    for col in loop_cols:
-        col_compare_df = compare_df[[c for c in compare_df.columns if col in c]]
-        compare_df[f'was_{col}_modified'] = (col_compare_df[f'{col}_old'] != col_compare_df[f'{col}_new'])
-
-    # discard rows where nothing was changed
-    compare_df['was_modified'] = compare_df[[col for col in compare_df.columns \
-                                            if 'was_' in col]].any(axis=1)
-    compare_df = compare_df[compare_df['was_modified'] == True]
-
-    # distinguish adds, deletions, modifications
-    def determine_change(old_val, new_val):
-        if pd.isnull(old_val):
-            return 'row_added'
-        elif pd.isnull(new_val):
-            return 'row_deleted'
-        else:
-            return 'row_modified'
-
-    compare_df['change_type'] = compare_df.apply(lambda x: determine_change(x['cat_name_old'], x['cat_name_new']), 
-                                                axis=1)
-    
-    compare_df_trim = compare_df[[col for col in compare_df.columns if 'html' not in col]]
-    return compare_df_trim
 
 ### Run Functions ### 
 if __name__ == '__main__': 
@@ -108,7 +79,7 @@ if __name__ == '__main__':
     
     # compare new and old runs to determine changes
     logging.info('comparing latest foster data to previous run')
-    current_changes_df = compareSnapshots(old_fosters_df, new_fosters_df)
+    current_changes_df = compare_snapshots(old_fosters_df, new_fosters_df)
     
     if current_changes_df.shape[0] > 0:
         logging.info('there have been changes since the last pipeline run')
