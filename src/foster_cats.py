@@ -13,7 +13,7 @@ import logging
 def getFosterInfo():
     
     soup = get_cat_page('https://bbawcfosterteam.wixsite.com/cats/availablecats')
-    cats = soup.find('fluid-columns-repeater').find_all('div', class_ = 'comp-kjevao4x5 YzqVVZ')
+    cats = soup.find('fluid-columns-repeater').find_all('div', class_ = 'comp-kjevao4x5 YzqVVZ wixui-repeater__item')
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
     results_list = []
