@@ -27,9 +27,9 @@ def getFosterInfo():
         
         # get basic info from text
         cat_name = text_data.find('h4').text
-        cat_summary = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevl5nv wixui-text").text
-        cat_timing = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevrpz5 wixui-text").text
-        cat_description = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevao593 wixui-text").text
+        cat_summary = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevl5nv wixui-rich-text").text
+        cat_timing = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevrpz5 wixui-rich-text").text
+        cat_description = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevao593 wixui-rich-text").text
         
         # construct an ID for cat (sometimes the name changes to "Name (Reserved)" or "Name (Hold)")
         # this will make it easier to compare snapshots
@@ -53,6 +53,9 @@ def getFosterInfo():
     
     return df
 
+# #TODO: 
+#  - add some checks to ensure that we get a new_fosters_df in the expected format 
+#  - add some checks to ensure that shape of new_fosters_df is not 0 because that overwrites history
 
 ### Run Functions ### 
 if __name__ == '__main__': 
