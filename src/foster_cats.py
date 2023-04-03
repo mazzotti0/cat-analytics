@@ -33,7 +33,7 @@ def getFosterInfo():
         
         # construct an ID for cat (sometimes the name changes to "Name (Reserved)" or "Name (Hold)")
         # this will make it easier to compare snapshots
-        cat_id = cat_name.replace(' (reserved)', '').lower()\
+        cat_id = cat_name.lower().replace(' (reserved)', '')\
                 .replace(' (hold)', '')\
                 .replace(' ', '-')
 
