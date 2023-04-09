@@ -7,6 +7,7 @@ import os
 from utilities import get_cat_page, send_new_foster_email, compare_snapshots
 from configparser import ConfigParser
 import logging
+import re
 
 
 
@@ -21,15 +22,15 @@ def getFosterInfo():
     for cat in cats:
         
         # get data 
-        text_data = cat.find('div', class_='hFQZVn comp-kjevao571 wixui-box')
+        text_data = cat.find('div', class_='hFQZVn comp-kjevao571')
         cat_image = cat.find('img').attrs['src']
         cat_link = cat.find('a').attrs['href']
         
         # get basic info from text
         cat_name = text_data.find('h4').text
-        cat_summary = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevl5nv wixui-rich-text").text
-        cat_timing = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevrpz5 wixui-rich-text").text
-        cat_description = text_data.find('div', class_="BaOVQ8 tz5f0K comp-kjevao593 wixui-rich-text").text
+        cat_summary = text_data.find(id=re.compile('comp-kjevl5nv')).text
+        cat_timing = text_data.find(id=re.compile('comp-kjevrpz5')).text
+        cat_description = text_data.find(id=re.compile('comp-kjevao593')).text
         
         # construct an ID for cat (sometimes the name changes to "Name (Reserved)" or "Name (Hold)")
         # this will make it easier to compare snapshots
