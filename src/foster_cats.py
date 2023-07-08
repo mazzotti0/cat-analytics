@@ -83,7 +83,7 @@ if __name__ == '__main__':
     
     # compare new and old runs to determine changes
     logging.info('comparing latest foster data to previous run')
-    current_changes_df = compare_snapshots(old_fosters_df, new_fosters_df)
+    current_changes_df = compare_snapshots(old_fosters_df, new_fosters_df, join_key='cat_id', exclude_cols=['import_at','full_html'])
     
     if current_changes_df.shape[0] > 0:
         logging.info('there have been changes since the last pipeline run')

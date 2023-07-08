@@ -7,7 +7,7 @@ import time
 import pytz
 import os
 import logging
-from utilities import get_cat_page, compare_snapshots
+from utilities import get_cat_page, compare_snapshots, create_field_history, update_field_history
 
 #################################
 ### DEFINE FUNCTIONS
@@ -106,8 +106,10 @@ def get_latest_snapshot(url, jobtime):
     cats = add_cat_page_info(cats)
     print('...done')
     
+    #create dataframe and replace empty string values with NaN
     cat_df = pd.DataFrame(data=cats)
     cat_df['system_import_at'] = run_ts
+    cat_df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
     
     return cat_df
 
@@ -120,25 +122,11 @@ if __name__ == '__main__':
 
 
     # configure logging
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler('/Users/lucasmazzotti/Documents/GitHub/cat-analytics/logs/cafe_cats.log')
-    fh.setLevel(logging.DEBUG)
-
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-
-    # add the handlers to logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    logging.basicConfig(filename='/Users/lucasmazzotti/Documents/GitHub/cat-analytics/logs/daily_cats.log', 
+                        filemode='a', 
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+                        level=logging.INFO)
+    logging.info('Logging configured for session')
 
     # run the script and record how much time it took
     start_time = time.perf_counter()
@@ -147,22 +135,59 @@ if __name__ == '__main__':
     url = 'https://catcafebk.com/our-cats/?'
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
-    cat_df = get_latest_snapshot(url, jobtime)
+    this_cat_df = get_latest_snapshot(url, jobtime)
     print('...retrieved latest cat data')
     
-    #check if file exists and append
-    if os.path.exists('cat_history.csv'):
-        print('...adding latest cat data to cat data history')
-        cat_history_df = pd.read_csv('cat_history.csv')
-        cat_history_df = pd.concat([cat_history_df, cat_df])
-        cat_history_df.to_csv('cat_history.csv', index=False)
+    # check for previous history, if none exists then create it and exit
+    if not os.path.exists('data/latest_cafe_cats.csv'):
+        msg = 'no previous run found. building baseline and exiting...'
+        print(msg)
+        logging.info(msg)
+        this_cat_df.to_csv('data/latest_cafe_cats.csv', index=False)
+        exit()
+    else: 
+        last_cat_df = pd.read_csv('data/latest_cafe_cats.csv')
     
-    #otherwise create the file anew
-    else:
-        cat_df.to_csv('cat_history.csv', index=False)
+    #overwrite file for latest cat run
+    this_cat_df.to_csv('data/latest_cafe_cats.csv', index=False)
+    
+    # compare new and old runs to determine changes
+    logging.info('comparing latest foster data to previous run')
+    this_cat_df['cat_id'] = this_cat_df['cat_id'].astype(int)
+    last_cat_df['cat_id'] = last_cat_df['cat_id'].astype(int)
+    change_df = compare_snapshots(last_cat_df, this_cat_df, join_key='cat_id', exclude_cols=['system_import_at'])
+    
+    if change_df.shape[0] > 0:
+        logging.info('there have been changes since the last pipeline run')
+        logging.info('summary of changes: ')
+        logging.info(change_df['change_type'].value_counts())
 
+        # append changes to change history if it exists
+        path = '../output/cafe_change_log.csv'
+        if os.path.exists(path):
+            logging.info('appending to existing change log')
+            old_changes_df = pd.read_csv(path)
+            changes_df = pd.concat([old_changes_df, change_df])
+            changes_df.to_csv(path, index=False)
+        else: 
+            logging.info('no existing change log found, creating a new one')
+            change_df.to_csv(path, index=False)
+    
+        # build field history + merge with existing records
+        logging.info('building field history...')
+        this_field_history_df = create_field_history(change_df, id_col='cat_id')
+        path = '../output/cafe_field_history.csv'
+        if not os.path.exists(path):
+            this_field_history_df.to_csv(path, index=False)
+        else: 
+            last_field_history_df = pd.read_csv(path)
+            field_history_df = update_field_history(last_field_history_df, this_field_history_df, id_col='cat_id')
+            field_history_df.to_csv(path, index=False)
+    else: 
+        logging.info('no new changes to report')
+            
     end_time = time.perf_counter()
     total_time = end_time - start_time
-    logger.info('successful daily_cats.py run!')
-    logger.info(f'Script completed in {total_time:0.6f} seconds')
+    logging.info('successful daily_cats.py run!')
+    logging.info(f'Script completed in {total_time:0.6f} seconds')
 
