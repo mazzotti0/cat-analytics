@@ -54,7 +54,7 @@ def add_cat_filters(results):
 
     # get list of cats associated with each filter
     for filtered in filters:
-        print(f"Getting {filtered['filter']} cats... ")
+        logging.info(f"Getting {filtered['filter']} cats... ")
         filtered_list = get_cat_summary(filtered['url'])
 
         # compare filtered list with main list
@@ -68,13 +68,13 @@ def add_cat_filters(results):
 
 def add_cat_page_info(cats): 
     
-    print(f'...checking page for {len(cats)} cats...')
+    logging.info(f'...checking page for {len(cats)} cats...')
     i = 1
     for cat in cats:
         
         # print progress in increments of 20
         if i % 20 == 0: 
-            print(f'...checked {i} of {len(cats)} cat pages...')
+            logging.info(f'...checked {i} of {len(cats)} cat pages...')
         
         # parse page info
         page = get_cat_page(cat['url'])
@@ -90,21 +90,27 @@ def add_cat_page_info(cats):
     
     return cats
 
-def get_latest_snapshot(url, jobtime):
+def get_latest_snapshot(url, jobtime, debug=False):
 
     run_ts = jobtime
     
-    print('Getting summary...')
+    if debug:
+        print('Getting summary...')
     cats = get_cat_summary(url)
-    print('...done')
+    if debug: 
+        print('...done')
     
-    print('Getting cat filter data...')
+    if debug: 
+        print('Getting cat filter data...')
     cats = add_cat_filters(cats)
-    print('...done')
+    if debug:
+        print('...done')
     
-    print('Getting individual cat info (descriptions, type)...')
+    if debug:
+        print('Getting individual cat info (descriptions, type)...')
     cats = add_cat_page_info(cats)
-    print('...done')
+    if debug:
+        print('...done')
     
     #create dataframe and replace empty string values with NaN
     cat_df = pd.DataFrame(data=cats)
@@ -136,12 +142,11 @@ if __name__ == '__main__':
     jobtime = datetime.fromtimestamp(int(time.time()), tz=pytz.utc)
     
     this_cat_df = get_latest_snapshot(url, jobtime)
-    print('...retrieved latest cat data')
+    logging.info('...retrieved latest cat data')
     
     # check for previous history, if none exists then create it and exit
     if not os.path.exists('data/latest_cafe_cats.csv'):
         msg = 'no previous run found. building baseline and exiting...'
-        print(msg)
         logging.info(msg)
         this_cat_df.to_csv('data/latest_cafe_cats.csv', index=False)
         exit()
